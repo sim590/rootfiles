@@ -1,0 +1,2 @@
+# files generated through `make configure`
+etc/udev/rules.d/00-usb-keyboards.rules

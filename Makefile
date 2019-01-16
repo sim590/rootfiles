@@ -1,6 +1,16 @@
-TARGETS    =
-DEST_DIR   = /
-DEST_LINKS = $(addprefix $(DEST_DIR)/,$(TARGETS))
+TARGETS      = etc/systemd/logind.conf \
+							 etc/udev/rules.d/00-usb-keyboards.rules \
+							 etc/default/grub \
+							 etc/apt/sources.list.d/testing.list \
+							 etc/apt/sources.list.d/unstable.list \
+							 etc/apt/sources.list.d/experimental.list \
+							 etc/apt/sources.list.d/google-chrome-unstable.list \
+							 etc/apt/sources.list.d/matrix-riot-im.list \
+							 etc/apt/preferences.d/testing \
+							 etc/apt/preferences.d/unstable \
+							 etc/apt/preferences.d/experimental
+DEST_DIR     = /
+DEST_LINKS   = $(addprefix $(DEST_DIR)/,$(TARGETS))
 CONFIG_FILES = $(shell find -name '*.in')
 CONFIG_OUT   = $(CONFIG_FILES:.in=)
 
