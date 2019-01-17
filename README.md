@@ -1,7 +1,7 @@
 
 # rootfiles
 
-This is the collection of my configuration files installable on the system per
+This is the collection of my configuration files installable on the system by
 the root user of the system.
 
 ## Installation
