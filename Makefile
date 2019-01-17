@@ -28,9 +28,9 @@ configure: $(CONFIG_OUT) ## Configure all the files (strings substitutions)
 $(CONFIG_OUT): $(CONFIG_FILES)
 	m4 macros.m4 $@.in > $@
 
-dirs:
-	@mkdir -p \
-		$(DEST_DIR)
+dirs: $(DEST_LINKS)
+	@mkdir -p $(dir $^)
+
 
 define MAKE_LINKS
 $(1): $(2)
