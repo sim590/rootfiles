@@ -8,7 +8,8 @@ TARGETS      = etc/systemd/logind.conf \
 							 etc/apt/sources.list.d/matrix-riot-im.list \
 							 etc/apt/preferences.d/testing \
 							 etc/apt/preferences.d/unstable \
-							 etc/apt/preferences.d/experimental
+							 etc/apt/preferences.d/experimental \
+							 etc/sysctl.d/98-sysctl.conf
 DEST_DIR     = /
 DEST_LINKS   = $(addprefix $(DEST_DIR)/,$(TARGETS))
 CONFIG_FILES = $(shell find -name '*.in')
