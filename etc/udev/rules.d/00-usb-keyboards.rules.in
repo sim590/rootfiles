@@ -8,3 +8,17 @@ SUBSYSTEM=="input", \
           ATTRS{idProduct}=="0125", \
           ATTRS{idVendor}=="04d9", \
           RUN+="/bin/su M4_USER M4_HOME/bin/udev-setkeyboard unlock"
+
+SUBSYSTEM=="input", \
+          ACTION=="add", \
+          ATTRS{idProduct}=="0141", \
+          ATTRS{idVendor}=="04d9", \
+          RUN+="/bin/su M4_USER M4_HOME/bin/udev-setkeyboard"
+SUBSYSTEM=="input", \
+          ACTION=="remove", \
+          ATTRS{idProduct}=="0141", \
+          ATTRS{idVendor}=="04d9", \
+          RUN+="/bin/su M4_USER M4_HOME/bin/udev-setkeyboard unlock"
+
+#  vim: set ft=udevrules sts=4 ts=4 sw=4 tw=120 et :
+
