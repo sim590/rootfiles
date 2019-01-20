@@ -1,4 +1,5 @@
 TARGETS      = etc/systemd/logind.conf \
+							 etc/systemd/journald.conf \
 							 etc/udev/rules.d/00-usb-keyboards.rules \
 							 etc/default/grub \
 							 etc/apt/sources.list.d/testing.list \
