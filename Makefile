@@ -10,7 +10,8 @@ TARGETS      = etc/systemd/logind.conf \
 							 etc/apt/preferences.d/testing \
 							 etc/apt/preferences.d/unstable \
 							 etc/apt/preferences.d/experimental \
-							 etc/sysctl.d/98-sysctl.conf
+							 etc/sysctl.d/98-sysctl.conf \
+							 etc/X11/xorg.conf.d/20-intel.conf
 DEST_DIR     = /
 DEST_LINKS   = $(addprefix $(DEST_DIR)/,$(TARGETS))
 CONFIG_FILES = $(shell find -name '*.in')
