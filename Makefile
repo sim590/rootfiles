@@ -1,5 +1,7 @@
 TARGETS      = etc/systemd/logind.conf \
 							 etc/systemd/journald.conf \
+							 etc/systemd/system/getty@tty1.service.d/override.conf \
+							 etc/systemd/system/getty@tty1.service.d/noclear.conf \
 							 etc/udev/rules.d/00-usb-keyboards.rules \
 							 etc/default/grub \
 							 etc/apt/sources.list.d/testing.list \
