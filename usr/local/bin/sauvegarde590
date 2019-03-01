@@ -211,7 +211,7 @@ mountdevice() {
 }
 
 unmountdevice(){
-  udisksctl unmount -b $DECRYPTEDVOLUME
+  udisksctl unmount -b $DECRYPTEDVOLUME >/dev/null
   if (( $? > 0 )) && findmnt -S UUID=$luksdevice_uuid >/dev/null; then
     print_error "Impossible de démonter le volume $luksdevice_uuid..."
     exit 3
