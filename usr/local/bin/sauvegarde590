@@ -1,0 +1,282 @@
+#!/bin/bash
+
+remotes=(github gitlab bitbucket)
+
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\e[33m"
+NO_COLOUR="\033[0m"
+BOLD="\e[1m"
+
+program_name="sauvegarde590"
+options='havB:u:i:I:r:D:c:s:'
+loptions='help,aide,version,utilisateur:,uuid:,luks-uuid:,git,branches:,disque,rootfiles:,depots-distants:,clef-luks,ssh-id:'
+version=0.1
+getopt_out=$(getopt --name $program_name --options $options --longoptions $loptions -- "$@")
+if (( $? != 0 )); then exit 1; fi
+
+#sets the positionnal parameters with getopt's output
+eval set -- "$getopt_out"
+
+join_with_delim() {
+  if (( ${#@} < 3 )); then
+    shift ; printf "$@"
+    return 0
+  fi
+  delim=$1
+  shift
+  args_=( $@ )
+  printf "%s$delim" "${args_[@]:0:$((${#args_[@]}-1))}"; printf "${args_[@]: -1}"
+}
+
+print_done() {
+  printf "${BOLD}${program_name}${NO_COLOUR}: ${GREEN}terminé${NO_COLOUR}.\n" >&2
+}
+
+print_fail() {
+  printf "${BOLD}${program_name}${NO_COLOUR}: ${RED}échec${NO_COLOUR}.\n" >&2
+}
+
+print_warning() {
+  printf "${BOLD}${program_name}${NO_COLOUR}: ${YELLOW}attention${NO_COLOUR}: $@\n" >&2
+}
+
+print_error() {
+  printf "${BOLD}${program_name}${NO_COLOUR}: ${RED}erreur${NO_COLOUR}: $@\n" >&2
+}
+
+print_help() {
+cat <<EOF
+${program_name} -- Sauvegarde toutes mes données.
+
+SYNOPSIS
+  $program_name [OPTIONS] -s ssh_id
+  $program_name [OPTIONS] -u utilisateur -i uuid -I uuid
+  $program_name [OPTIONS] -u utilisateur -i uuid -I uuid -s ssh_id
+
+OPTIONS
+  -a|--aide
+    Affiche ce texte d'aide.
+  -v|--version
+    Affiche la version du programme.
+  -u|--utilisateur {utilisateur}
+    Nom d'utilisateur pour lequel sauvegarder les données.
+  -i|--uuid {uuid}
+    UUID du disque (périphérique) vers lequel sauvegarder les données.
+  -I|--luks-uuid {uuid}
+    UUID du périphérique LUKS vers lequel sauvegarder les données (généré après
+    le déchifrement du disque -i).
+  --git
+    Ne procéder qu'à la sauvegarde des dépôts git. Ceci se fait par le transfert
+    vers les dépôts distants configurés dans chacun des dépôts. Les dépôts
+  -r|--rootfiles
+    Chemin vers le dépôt contenant les fichiers de configuration du système. Par
+    défaut: /rootfiles.
+  -s|--ssh-id
+    Cet option doit être spécifié afin que les opérations de synchronisation des
+    dépôts git utilisent les secrets d'authentification (~/.ssh/id_rsa).
+  -B|--branches {branche},...
+    Liste des branches poussées dans chaque dépôt. Cette liste blanche de
+    branches peut être utile pour éviter de pousser des configurations (dépôt
+    "dotfiles") potentiellement plus à jour sur un autre ordinateur. Par défaut,
+    \`git push :\` est exécuté (voir "matching" dans git-push(1) pour la
+    signification de ':').
+  -D|--depots-distants {dépôt},...
+    Spécifier les dépôts distants sur lesquels les références seront poussées.
+    Par défaut:  $(join_with_delim ',' ${remotes[@]}).
+  --disque
+    Ne procéder qu'à la sauvegarde des fichiers sur le disque. Les répertoires
+    sauvegardés sont:
+
+    /home/UTILISATEUR/
+    /var/lib/transmission-daemon/downloads
+  -c|--clef-luks {fichier}
+    Chemin vers un fichier de clef LUKS. Ceci est utile lorsque le script roule
+    en arrière-plan.
+EOF
+}
+
+branches=(:)
+rootfilesdir=/rootfiles
+while [[ $1 != "--" ]]; do
+  case "$1" in
+    -a|--aide|-h|--help)
+      print_help
+      exit 0
+      ;;
+    -v|--version)
+      echo "${program_name} v${version}"
+      exit 0
+      ;;
+    -u|--utilisateur)
+      user="$2"
+      shift 2
+      ;;
+    -i|--uuid)
+      destdevice_uuid=$2
+      shift 2
+      ;;
+    -s|--ssh-id)
+      ssh_id=$2
+      shift 2
+      ;;
+    -I|--luks-uuid)
+      luksdevice_uuid=$2
+      shift 2
+      ;;
+    --git)
+      only_git=true
+      shift 1
+      ;;
+    -r|--rootfiles)
+      rootfilesdir="$2"
+      shift 2
+      ;;
+    -B|--branches)
+      readarray -td ',' branches <<< "$2"
+      shift 2
+      ;;
+    -D|--depots-distants)
+      readarray -td ',' remotes <<< "$2"
+      shift 2
+      ;;
+    --disque)
+      only_disk=true
+      shift 1
+      ;;
+    -c|--clef-luks)
+      luks_keyfile="$2"
+      shift 2
+      ;;
+  esac
+done
+# shift away from the last optional parameter (--)
+shift
+
+if [[ $only_git ]] && [[ $only_disk ]]  ; then
+  print_error "Les arguments --git et --disque sont mutuellement exclusifs..."
+  exit 255
+fi
+
+if ! [[ $user ]]; then
+  print_error "L'argument -u est obligatoire..."
+  exit 255
+fi
+
+if ! [[ $only_git ]]; then
+  if ! [[ $destdevice_uuid ]] ; then
+    print_error "L'argument -i est obligatoire..."
+    exit 255
+  fi
+
+  if ! [[ $luksdevice_uuid ]] ; then
+    print_error "L'argument -I est obligatoire..."
+    exit 255
+  fi
+fi
+
+if ! [[ $only_disk ]] && ! [[ $ssh_id ]] ; then
+  print_error "L'argument -s est obligatoire..."
+  exit 255
+fi
+
+HOSTNAME_=$(hostname)
+
+DOTFILESDIR=/home/$user/dotfiles
+DESTVOLUME=/dev/disk/by-uuid/$destdevice_uuid
+DECRYPTEDVOLUME=/dev/disk/by-uuid/$luksdevice_uuid
+
+luksopen() {
+  if [ -b /dev/disk/by-uuid/$luksdevice_uuid ]; then
+    # Volume is already decrypted
+    return 1
+  fi
+  if [[ $luks_keyfile ]]; then
+    cryptsetup open --type luks --key-file "$luks_keyfile" $DESTVOLUME $luksdevice_uuid
+  else
+    cryptsetup open --type luks $DESTVOLUME $luksdevice_uuid
+  fi
+  if (( $? > 0 )); then
+    print_error "Impossible de trouver le volume déchiffré ($luksdevice_uuid)..."
+    exit 1
+  fi
+}
+
+mountdevice() {
+  udisksctl mount -b $DECRYPTEDVOLUME >/dev/null
+  if (( $? > 0 )) && ! findmnt -S UUID=$luksdevice_uuid >/dev/null; then
+    print_error "Impossible de monter le disque $luksdevice_uuid..."
+    exit 2
+  fi
+}
+
+unmountdevice(){
+  udisksctl unmount -b $DECRYPTEDVOLUME
+  if (( $? > 0 )) && findmnt -S UUID=$luksdevice_uuid >/dev/null; then
+    print_error "Impossible de démonter le volume $luksdevice_uuid..."
+    exit 3
+  fi
+}
+
+luksclose() {
+  cryptsetup close $DECRYPTEDVOLUME
+  if (( $? > 0 )); then
+    print_error "Impossible de fermer le volume chiffré ($luksdevice_uuid)..."
+    exit 4
+  fi
+}
+
+sync_git_remotes() {
+  print_warning "Synchronisation de $1..."
+  cd "$1"
+  for r in ${remotes[@]} ; do
+    env GIT_SSH_COMMAND="ssh -i $ssh_id" git push $r ${branches[@]}
+    ret=$((ret+$?))
+  done
+  (( $ret == 0 )) && print_done || print_fail
+}
+
+rsynccmd() {
+  rsync -a --info=progress2 "$@"
+}
+
+sync_directories() {
+  destdir="$1"
+  ret=0
+  mkdir -p $destdir/sauvegarde/$HOSTNAME_
+  print_warning "Synchronisation de /home/$user"
+  rsynccmd /home/$user/ \
+           "$destdir/sauvegarde/$HOSTNAME_/$user/"
+  ret=$((ret+$?))
+  print_warning "Synchronisation de /var/lib/transmission-daemon/downloads"
+  rsynccmd /var/lib/transmission-daemon/downloads \
+           "$destdir/sauvegarde/$HOSTNAME_/transmission-downloads"
+  ret=$((ret+$?))
+  (( $ret == 0 )) && print_done || print_fail
+}
+
+if ! [[ $only_disk ]]; then
+  for d in "$DOTFILESDIR" "$rootfilesdir" ; do
+    (sync_git_remotes "$d")
+  done
+fi
+
+if ! [[ $only_git ]]; then
+  if [ -b $DESTVOLUME ]; then
+    # Disk is connected
+    luksopen
+    vlabel=$(blkid $DECRYPTEDVOLUME | sed 's/.*LABEL="\(\S*\)".*/\1/')
+    destdir="/media/root/$vlabel"
+    mountdevice
+    sync_directories "$destdir"
+    sync # Attendre que l'écriture se fasse sur les disques avant de retirer le disque
+    unmountdevice
+    luksclose
+  else
+    # Disk is connected
+    print_error "Impossible de trouver le disque $destdevice_uuid..."
+  fi
+fi
+
+# vim: set sts=2 ts=2 sw=2 tw=120 et :
+
