@@ -203,15 +203,18 @@ luksopen() {
 }
 
 mountdevice() {
-  udisksctl mount -b $DECRYPTEDVOLUME >/dev/null
-  if (( $? > 0 )) && ! findmnt -S UUID=$luksdevice_uuid >/dev/null; then
+  destdir=$1
+  mount $DECRYPTEDVOLUME "$destdir"
+  mountloc=$(findmnt -S UUID=$luksdevice_uuid)
+  fmntret=$?
+  if (( $fmntret > 0 )) || [[ "$(tail -n1 <<< "$mountloc" | cut -f 1 -d ' ')" != "$destdir" ]] ; then
     print_error "Impossible de monter le disque $luksdevice_uuid..."
     exit 2
   fi
 }
 
 unmountdevice(){
-  udisksctl unmount -b $DECRYPTEDVOLUME >/dev/null
+  umount "$1"
   if (( $? > 0 )) && findmnt -S UUID=$luksdevice_uuid >/dev/null; then
     print_error "Impossible de démonter le volume $luksdevice_uuid..."
     exit 3
@@ -267,10 +270,10 @@ if ! [[ $only_git ]]; then
     luksopen
     vlabel=$(blkid $DECRYPTEDVOLUME | sed 's/.*LABEL="\(\S*\)".*/\1/')
     destdir="/media/root/$vlabel"
-    mountdevice
+    mountdevice "$destdir"
     sync_directories "$destdir"
     sync # Attendre que l'écriture se fasse sur les disques avant de retirer le disque
-    unmountdevice
+    unmountdevice "$destdir"
     luksclose
   else
     # Disk is connected
