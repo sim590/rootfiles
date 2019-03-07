@@ -247,13 +247,13 @@ sync_directories() {
   destdir="$1"
   ret=0
   mkdir -p $destdir/sauvegarde/$HOSTNAME_
-  print_warning "Synchronisation de /home/$user"
+  print_warning "Synchronisation de /home/$user/"
   rsynccmd /home/$user/ \
            "$destdir/sauvegarde/$HOSTNAME_/$user/"
   ret=$((ret+$?))
-  print_warning "Synchronisation de /var/lib/transmission-daemon/downloads"
-  rsynccmd /var/lib/transmission-daemon/downloads \
-           "$destdir/sauvegarde/$HOSTNAME_/transmission-downloads"
+  print_warning "Synchronisation de /var/lib/transmission-daemon/downloads/"
+  rsynccmd /var/lib/transmission-daemon/downloads/ \
+           "$destdir/sauvegarde/$HOSTNAME_/transmission-downloads/"
   ret=$((ret+$?))
   (( $ret == 0 )) && print_done || print_fail
 }
