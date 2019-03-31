@@ -204,6 +204,7 @@ luksopen() {
 
 mountdevice() {
   destdir=$1
+  mkdir -p "$destdir"
   mount $DECRYPTEDVOLUME "$destdir"
   mountloc=$(findmnt -S UUID=$luksdevice_uuid)
   fmntret=$?
