@@ -1,4 +1,6 @@
-TARGETS      = etc/systemd/logind.conf \
+TARGETS      = \
+							 etc/tlp.conf \
+							 etc/systemd/logind.conf \
 							 etc/systemd/journald.conf \
 							 etc/systemd/system/getty@tty1.service.d/override.conf \
 							 etc/systemd/system/getty@tty1.service.d/noclear.conf \
