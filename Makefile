@@ -7,7 +7,7 @@ TARGETS      = etc/systemd/logind.conf \
 							 etc/apt/sources.list.d/testing.list \
 							 etc/apt/sources.list.d/unstable.list \
 							 etc/apt/sources.list.d/experimental.list \
-							 etc/apt/sources.list.d/google-chrome-unstable.list \
+							 etc/apt/sources.list.d/google-chrome.list \
 							 etc/apt/sources.list.d/matrix-riot-im.list \
 							 etc/apt/preferences.d/testing \
 							 etc/apt/preferences.d/unstable \
