@@ -1,1 +1,1 @@
-deb https://riot.im/packages/debian/ bionic main
+deb [signed-by=/usr/share/keyrings/riot-im-archive-keyring.gpg] https://packages.riot.im/debian/ bullseye main
